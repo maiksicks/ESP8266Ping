@@ -31,8 +31,11 @@ PingClass::PingClass() :
 {
 }
 
-bool PingClass::ping(IPAddress dest, unsigned int count) 
+bool PingClass::ping(IPAddress dest, unsigned int count, Callback cb) 
 {
+  if (!_done)
+    return false;
+
   _expected_count = count;
   _errors = 0;
   _success = 0;
@@ -42,6 +45,8 @@ bool PingClass::ping(IPAddress dest, unsigned int count)
   _max_time = 0;
 
   _done = false;
+
+  _callback = cb;
   
   memset(&_options, 0, sizeof(struct ping_option));
 
@@ -61,23 +66,33 @@ bool PingClass::ping(IPAddress dest, unsigned int count)
   // Let's go!
   if(ping_start(&_options))
   {
+    // Skip delay if a callback is set
+    if (_callback != nullptr)
+      return true;
+
     // Suspend till the process end
     unsigned int delay_time = _options.coarse_time * 1000;
+
     // Wait until the process is done
     // NOTE: delay() is interrupted by esp_schedule()
+
     while (!_done)
       delay(delay_time);
+  }
+  else 
+  {
+    _callback(false);
   }
 
   return (_success > 0);
 }
 
-bool PingClass::ping(const char* host, unsigned int count)
+bool PingClass::ping(const char* host, unsigned int count, Callback cb)
 {
   IPAddress remote_addr;
 
   if (WiFi.hostByName(host, remote_addr))
-    return ping(remote_addr, count);
+    return ping(remote_addr, count, cb);
 
   return false;
 }
@@ -95,6 +110,13 @@ int PingClass::averageTime()
 int PingClass::maxTime()
 {
   return _max_time;
+}
+
+void PingClass::loop() {
+  if (_done && _callback != nullptr) {
+    _callback(_success > 0);
+    _callback = nullptr;
+  }
 }
 
 void PingClass::_ping_recv_cb(void *opt, void *resp)

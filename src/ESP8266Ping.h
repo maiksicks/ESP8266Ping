@@ -37,14 +37,18 @@ extern "C"
 class PingClass
 {
   public:
+    typedef void (*Callback)(const bool ret);
+
     PingClass();
 
-    bool ping(IPAddress dest,   unsigned int count = 5);
-    bool ping(const char* host, unsigned int count = 5);
+    bool ping(IPAddress dest,   unsigned int count = 5, Callback cb = nullptr);
+    bool ping(const char* host, unsigned int count = 5, Callback cb = nullptr);
 
     int minTime();
     int averageTime();
     int maxTime();
+
+    void loop();
 
   protected:
     static void _ping_sent_cb(void *opt, void *pdata);
@@ -57,6 +61,7 @@ class PingClass
     uint _min_time, _avg_time, _max_time;
 
     bool _done;
+    Callback _callback = nullptr;
 };
 
 extern PingClass Ping;

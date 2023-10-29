@@ -38,3 +38,22 @@ After `Ping.ping()` has been called, the average response time (in milliseconds)
 ```Arduino
 int avg_time_ms = Ping.averageTime();
 ```
+It is possible to use a callback function to be notified when a ping is received.
+Make sure to call `Ping.loop()` in the `loop()` function of your sketch. Currently only one active ping is supported at a time.
+
+```Arduino
+void pingCallback(const bool ret) {
+  Serial.println(ret ? "Success!" : "Error!");
+}
+
+void setup() {
+  // ...
+  Ping.ping("www.google.com", 5, &pingCallback);
+}
+
+void loop() {
+  Ping.loop();
+  // do other stuff here
+  delay(200);
+}
+```
